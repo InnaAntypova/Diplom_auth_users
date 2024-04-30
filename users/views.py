@@ -1,6 +1,4 @@
 import time
-
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,7 +19,7 @@ class UserAuthAPIView(APIView):
         request_body=UserRegistrationSerializer
     )
     def post(self, request, *args, **kwargs):
-        """ Метод для отправки номера телефона и получения кода авторизации """
+        """ Метод для отправки на сервер номера телефона и получения кода авторизации """
         serializer = UserRegistrationSerializer(data=request.data)
         message = f'На указанный Вами номер телефона отправлено SMS с кодом доступа.'
         try:
@@ -51,6 +49,7 @@ class UserAuthAPIView(APIView):
         request_body=UserVerifySerializer
     )
     def put(self, request, *args, **kwargs):
+        """ Метод для отправки на сервер полученного кода авторизации """
         serializer = UserVerifySerializer(data=request.data)
         if serializer.is_valid():
             code = serializer.validated_data['auth_code']
@@ -70,6 +69,7 @@ class UserProfileUpdateDeleteAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, IsOwner | IsUserStaff]
 
     def update(self, request, *args, **kwargs):
+        """ Метод для обновления профиля пользователя """
         data = request.data
         if 'referral_code' not in data:
             return super(UserProfileUpdateDeleteAPIView, self).update(request, *args, **kwargs)

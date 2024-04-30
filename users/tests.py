@@ -23,10 +23,38 @@ class UserTestCase(APITestCase):
         data_post = {
             'phone': '+79531112244'
         }
+        response_post = self.client.post('/api/users/login/', data=data_post)
+        self.assertEquals(
+            response_post.status_code,
+            status.HTTP_201_CREATED
+        )
+        self.assertEquals(
+            response_post.json(),
+            {'message': 'На указанный Вами номер телефона отправлено SMS с кодом доступа.',
+             'test_code': response_post.json()['test_code']}
+        )
+
+        data_put = {
+            'auth_code': response_post.json()['test_code']
+        }
+        response_put = self.client.put('/api/users/login/', data=data_put)
+        self.assertEquals(
+            response_put.status_code,
+            status.HTTP_200_OK
+        )
+        self.assertEquals(
+            response_put.json(),
+            {'message': 'Доступ разрешен.'}
+        )
+
+    def test_re_auth_user(self):
+        data_post = {
+            'phone': '+79525552233'
+        }
         response = self.client.post('/api/users/login/', data=data_post)
         self.assertEquals(
             response.status_code,
-            status.HTTP_201_CREATED
+            status.HTTP_200_OK
         )
         self.assertEquals(
             response.json(),
@@ -75,6 +103,34 @@ class UserTestCase(APITestCase):
         self.assertEquals(
             response2.json(),
             {'message': 'Не верный запрос.'}
+        )
+
+        # не верный код
+        data_post = {
+            'phone': '+79525552233'
+        }
+        response = self.client.post('/api/users/login/', data=data_post)
+        self.assertEquals(
+            response.status_code,
+            status.HTTP_200_OK
+        )
+        self.assertEquals(
+            response.json(),
+            {'message': 'На указанный Вами номер телефона отправлено SMS с кодом доступа.',
+             'test_code': response.json()['test_code']}
+        )
+
+        data_put = {
+            'auth_code': '1234'
+        }
+        response_put = self.client.put('/api/users/login/', data=data_put)
+        self.assertEquals(
+            response_put.status_code,
+            status.HTTP_403_FORBIDDEN
+        )
+        self.assertEquals(
+            response_put.json(),
+            {'message': 'Доступ запрещен. Не верный код.'}
         )
 
     def test_get_profile_user(self):
@@ -186,6 +242,14 @@ class UserTestCase(APITestCase):
 
     def test_delete_user(self):
         """ Тест на удаление пользователя """
+        # удаление чужого профиля
+        self.client.force_authenticate(user=self.user2)
+        response = self.client.delete(f'/api/users/{self.user1.id}/')
+        self.assertEquals(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN
+        )
+        # удаление своего профиля
         self.client.force_authenticate(user=self.user2)
         response = self.client.delete(f'/api/users/{self.user2.id}/')
         self.assertEquals(
